@@ -2,15 +2,15 @@
   "test": {
     "driver": "pg",
     "host": "127.0.0.1",
-    "database": "udacityTest",
-    "user": "storefront",
-    "password": "admin123"
+    "database": "udacity_db_test",
+    "user": "udacity_user",
+    "password": "udacity_password"
   },
     "dev": {
       "driver": "pg",
       "host": "127.0.0.1",
       "database": "udacity",
-      "user": "storefront",
-      "password": "admin123"
+      "user": "udacity_user",
+      "password": "udacity_password"
     }
 }

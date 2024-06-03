@@ -1,15 +1,22 @@
-import express from 'express';
-const routers = express.Router();
-import productRoute from '../routes/api/productRoute';
-import userRoute from './api/userRoute';
-import orderRoute from './api/orderRoute';
+import express from "express";
+import productRoutes from "../routes/api/productRoute";
+import userRoutes from "./api/userRoute";
+import orderRoutes from "./api/orderRoute";
 
-routers.get('/', (req, res) => {
-  res.send('Welcome to Project 2 of Udacity');
+const router = express.Router();
+
+// Root route
+router.get("/", (req, res) => {
+  res.send("Welcome to the Udacity Project 2 API");
 });
 
-routers.use('/products', productRoute);
-routers.use('/users', userRoute);
-routers.use('/orders', orderRoute);
+// Product routes
+router.use("/products", productRoutes);
 
-export default routers;
+// User routes
+router.use("/users", userRoutes);
+
+// Order routes
+router.use("/orders", orderRoutes);
+
+export default router;

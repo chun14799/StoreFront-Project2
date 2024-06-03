@@ -4,32 +4,34 @@ import app from "../server";
 import supertest from "supertest";
 import axios from "axios";
 
-let http = supertest.agent(app);
+const http = supertest.agent(app);
 const backendServer = "http://localhost:3000/api";
 dotenv.config();
 const store = new UserStore();
-describe("Testing User model", () => {
+
+describe("User Model Tests", () => {
   it("should have an index method", () => {
     expect(store.index).toBeDefined();
   });
 
-  it("should have showInfo method", () => {
+  it("should have a showInfo method", () => {
     expect(store.showUserInfo).toBeDefined();
   });
 
-  it("should have create User method", () => {
+  it("should have a create User method", () => {
     expect(store.createUser).toBeDefined();
   });
 
-  it("should have authenticate method", () => {
+  it("should have an authenticate method", () => {
     expect(store.authenticate).toBeDefined();
   });
 });
-describe("Testing User Enpoints", () => {
+
+describe("User Endpoint Tests", () => {
   const loginURL = `${backendServer}/users/authenticate`;
   const payloadLogin = {
     userName: "user.test",
-    password: "user123",
+    password: "userTest123",
   };
   let newUser;
   let token;
@@ -41,68 +43,66 @@ describe("Testing User Enpoints", () => {
         first_name: "Login",
         last_name: "User",
         userName: "user.test",
-        password: "user123",
+        password: "userTest123",
       };
       newUser = await axios.post(`${backendServer}/users/signUp`, createdUser);
-      //@ts-ignore
-      token = signUpProduct.data.data;
+      token = newUser.data.token;
       config = {
         headers: { Authorization: `Bearer ${token}` },
       };
     } catch (error) {
-      console.log("error");
+      console.log("Error in beforeAll: ", error);
     }
   });
 
-  it("Testing login method return token", async () => {
+  it("should test login method return token", async () => {
     const result = await axios.post(loginURL, payloadLogin);
-    //@ts-ignore
     expect(result.data.token).toBeDefined();
-  }),
-    it("should let user sign up succesfully", async () => {
-      const singUpUser = {
-        first_name: "Tu",
-        last_name: "Nguyen Hoang",
-        userName: "tu.nguyenhoang",
-        password: "admin123",
-      };
-      const url = `${backendServer}/users/signUp`;
-      const result = await axios.post(url, singUpUser);
-      expect(result.status).toBe(200);
-    });
+  });
 
-  it("Index should require token and return value", async () => {
+  it("should let user sign up successfully", async () => {
+    const signUpUser = {
+      first_name: "Lionel",
+      last_name: "Messi",
+      userName: "lionel.messi",
+      password: "udacity_password",
+    };
+    const url = `${backendServer}/users/signUp`;
+    const result = await axios.post(url, signUpUser);
+    expect(result.status).toBe(201);
+  });
+
+  it("should require token for Index and return value", async () => {
     const login = await axios.post(loginURL, payloadLogin);
     const loginToken = login.data.token;
-    let config = {
+    const config = {
       headers: { Authorization: `Bearer ${loginToken}` },
     };
     const indexValue = await axios.get(`${backendServer}/users`, config);
-    //@ts-ignore
     expect(indexValue.status).toBe(200);
   });
 
-  it("should let user create new user succesfully and require token", async () => {
-    const singUpUser = {
-      first_name: "Tom",
-      last_name: "Holland",
-      userName: "tom.holland",
-      password: "tom123",
+  it("should let user create a new user successfully and require token", async () => {
+    const signUpUser = {
+      first_name: "Cristiano",
+      last_name: "Ronaldo",
+      userName: "cristiano.ronaldo",
+      password: "cr7",
     };
     const login = await axios.post(loginURL, payloadLogin);
     const loginToken = login.data.token;
-    let config = {
+    const config = {
       headers: { Authorization: `Bearer ${loginToken}` },
     };
     const url = `${backendServer}/users/`;
-    const result = await axios.post(url, singUpUser, config);
-    expect(result.status).toBe(200);
+    const result = await axios.post(url, signUpUser, config);
+    expect(result.status).toBe(201);
   });
 
   it("should show user info and require token", async () => {
     const login = await axios.post(loginURL, payloadLogin);
     const loginToken = login.data.token;
-    let config = {
+    const config = {
       headers: { Authorization: `Bearer ${loginToken}` },
     };
     const userId = 1;

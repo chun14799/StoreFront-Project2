@@ -1,7 +1,7 @@
 import client from "../connection";
 
 export type Order = {
-  id?: Number;
+  id?: number;
   product_id: number;
   user_id: number;
   quantity: number;
@@ -10,9 +10,9 @@ export type Order = {
 
 export class OrderStore {
   // @ts-ignore
-  async index(): Promise<Order[]> {
+  async getAllOrders(): Promise<Order[]> {
     try {
-      const connection = await client.connect();
+      const connection = await client!.connect();
       const sql = `SELECT * FROM orders`;
       const result = await connection.query(sql);
       connection.release();
@@ -30,7 +30,7 @@ export class OrderStore {
         user_id: order.user_id,
         status: order.status,
       };
-      const connection = await client.connect();
+      const connection = await client!.connect();
       const sql_insert_order = `
           WITH new_row AS (
               INSERT INTO orders (product_id,quantity, user_id,status)
@@ -38,7 +38,7 @@ export class OrderStore {
             )
           INSERT INTO order_product (order_id, product_id) VALUES ((SELECT id FROM new_row), (SELECT product_id FROM new_row)) RETURNING *;
           `;
-      const result = await client.query(sql_insert_order, [
+      const result = await client!.query(sql_insert_order, [
         newOrder.product_id,
         newOrder.quantity,
         newOrder.user_id,
@@ -60,14 +60,14 @@ export class OrderStore {
   // get order by user_id
   async getOrdersByUser(userId: number): Promise<Order[]> {
     try {
-      const connection = await client.connect();
+      const connection = await client!.connect();
       const sql = `SELECT orders.id , orders.product_id , orders.user_id , orders.quantity, orders.status
         FROM orders
         INNER JOIN users
             ON orders.user_id = users.id
         WHERE users.id = ${userId}
         `;
-      const results = await client.query(sql);
+      const results = await client!.query(sql);
       if (results) {
         const ordersOfUser = results.rows;
         connection.release();
@@ -83,7 +83,7 @@ export class OrderStore {
   // get completed order by user_id
   async getCompletedOrdersByUser(userId: number): Promise<Order[]> {
     try {
-      const connection = await client.connect();
+      const connection = await client!.connect();
       const sql = `SELECT orders.id , orders.product_id , orders.user_id , orders.quantity, orders.status
           FROM orders
           INNER JOIN users
@@ -91,7 +91,7 @@ export class OrderStore {
           WHERE users.id = ${userId}
           AND orders.status = 'complete'
           `;
-      const results = await client.query(sql);
+      const results = await client!.query(sql);
       if (results) {
         const ordersOfUser = results.rows;
         connection.release();
@@ -104,9 +104,9 @@ export class OrderStore {
       throw new Error(`${error}`);
     }
   }
-  async updateStatusOfOrder(orderId: number): Promise<Order> {
+  async updateOrderStatusToComplete(orderId: number): Promise<Order> {
     try {
-      const connection = await client.connect();
+      const connection = await client!.connect();
       const sql = `
             UPDATE orders
             SET status = 'complete'

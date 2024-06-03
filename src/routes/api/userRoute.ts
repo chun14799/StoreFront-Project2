@@ -1,137 +1,136 @@
 import express, { Request, Response } from "express";
 import { User, UserStore } from "../../models/users";
-import auth from "../../middleware/auth";
+import authMiddleware from "../../middleware/auth";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 
 dotenv.config();
-const userRoute = express.Router();
-const userStore = new UserStore();
-const serect = String(process.env.SECRET_TOKEN);
-// get list of users
-userRoute.get("/", auth, async (req: Request, res: Response) => {
+
+const router = express.Router();
+const userStoreInstance = new UserStore();
+const secretToken = process.env.SECRET_TOKEN as string;
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  return String(error);
+};
+
+// Retrieve all users
+router.get("/", authMiddleware, async (req: Request, res: Response) => {
   try {
-    const authorizeHeader = req.headers.authorization;
-    const token = String(authorizeHeader).split(" ")[1];
-    jwt.verify(token, serect);
-  } catch (error) {
-    res.status(401).send({ message: `${error}` });
-  }
-  try {
-    const users = await userStore.index();
+    const allUsers = await userStoreInstance.index();
     res
       .status(200)
-      .json({ message: "Get list of users successfully", data: users });
+      .json({ message: "User list retrieved successfully", data: allUsers });
   } catch (error) {
-    res.status(500).send({ message: `${error}` });
-  }
-});
-// get info just one user
-userRoute.get("/:id", auth, async (_req: Request, res: Response) => {
-  try {
-    const userId = parseInt(_req.params.id);
-    //@ts-ignores
-    if (userId && typeof userId == "number") {
-      const user = await userStore.showUserInfo(userId);
-      res
-        .status(200)
-        .json({ message: "Get user info successfully", data: user });
-      return user;
-    } else {
-      res
-        .status(400)
-        .send({ message: "Invalid userId or user id must be a number" });
-    }
-  } catch (error) {
-    res.status(500).send({ message: `${error}` });
-  }
-});
-// sign up
-userRoute.post("/signUp", async (req: Request, res: Response) => {
-  try {
-    const newUser: User = {
-      fistName: req.body.first_name,
-      lastName: req.body.last_name,
-      userName: req.body.userName,
-      password: req.body.password,
-    };
-    if (
-      newUser.userName &&
-      newUser.password &&
-      newUser.fistName &&
-      newUser.lastName
-    ) {
-      const signUpUser = await userStore.createUser(newUser);
-      res.status(200).json({
-        message: "Sign up successfully",
-        token: signUpUser,
-      });
-    } else {
-      res.status(400).send({
-        message: "Please input username, password, firstname, lastname",
-      });
-    }
-  } catch (error) {
-    res.status(422).json({
-      message: `${error}`,
-      data: null,
-    });
-  }
-});
-//create new user with Admin account
-userRoute.post("/", auth, async (req: Request, res: Response) => {
-  const newUser: User = {
-    fistName: req.body.first_name,
-    lastName: req.body.last_name,
-    userName: req.body.userName,
-    password: req.body.password,
-  };
-  try {
-    if (
-      newUser.userName &&
-      newUser.password &&
-      newUser.fistName &&
-      newUser.lastName
-    ) {
-      const createdUser = await userStore.createUser(newUser);
-      res.status(200).json({
-        message: "Create user successfully",
-        data: createdUser,
-      });
-    } else {
-      res.status(400).send({
-        message: "Please input username, password, firstname, lastname",
-      });
-    }
-  } catch (error) {
-    res.status(422).json({
-      message: `${error}`,
-      data: null,
-    });
-  }
-});
-// authenticate to get token (login)
-userRoute.post("/authenticate", async (req: Request, res: Response) => {
-  try {
-    const userName = req.body.userName;
-    const password = req.body.password;
-    if (userName && password) {
-      const authenUser = await userStore.authenticate(userName, password);
-      res.status(200).json({
-        message: "Login Successfully",
-        token: authenUser,
-      });
-    } else {
-      res
-        .status(400)
-        .send({ message: "Please input username, password to login" });
-    }
-  } catch (error) {
-    res.status(403).json({
-      message: `${error}`,
-      data: null,
-    });
+    res
+      .status(500)
+      .send({ message: `Internal Server Error: ${getErrorMessage(error)}` });
   }
 });
 
-export default userRoute;
+// Retrieve a specific user by ID
+router.get("/:id", authMiddleware, async (req: Request, res: Response) => {
+  const userId = parseInt(req.params.id);
+  if (isNaN(userId)) {
+    return res.status(400).send({ message: "Invalid user ID" });
+  }
+
+  try {
+    const user = await userStoreInstance.showUserInfo(userId);
+    res
+      .status(200)
+      .json({
+        message: "User info retrieved successfully",
+        data: user.data,
+        token: user.token,
+      });
+  } catch (error) {
+    console.error(`Error in GET /users/:id: ${error}`);
+    res
+      .status(500)
+      .send({ message: `Internal Server Error: ${getErrorMessage(error)}` });
+  }
+});
+
+// User registration
+router.post("/signUp", async (req: Request, res: Response) => {
+  const { first_name, last_name, userName, password } = req.body;
+  const newUser: User = {
+    firstName: first_name,
+    lastName: last_name,
+    userName,
+    password,
+  };
+
+  if (!first_name || !last_name || !userName || !password) {
+    return res.status(400).send({ message: "All fields are required" });
+  }
+
+  try {
+    const registeredUser = await userStoreInstance.createUser(newUser);
+    res.status(201).json({
+      message: "User registered successfully",
+      token: registeredUser.token,
+    });
+  } catch (error) {
+    console.error(`Error in signUp: ${error}`);
+    res
+      .status(422)
+      .json({ message: `Unprocessable Entity: ${getErrorMessage(error)}` });
+  }
+});
+
+// Admin: Create new user
+router.post("/", authMiddleware, async (req: Request, res: Response) => {
+  const { first_name, last_name, userName, password } = req.body;
+  const newUser: User = {
+    firstName: first_name,
+    lastName: last_name,
+    userName,
+    password,
+  };
+
+  if (!first_name || !last_name || !userName || !password) {
+    return res.status(400).send({ message: "All fields are required" });
+  }
+
+  try {
+    const createdUser = await userStoreInstance.createUser(newUser);
+    res
+      .status(201)
+      .json({ message: "User created successfully", data: createdUser });
+  } catch (error) {
+    res
+      .status(422)
+      .json({ message: `Unprocessable Entity: ${getErrorMessage(error)}` });
+  }
+});
+
+// User login/authentication
+router.post("/authenticate", async (req: Request, res: Response) => {
+  const { userName, password } = req.body;
+
+  if (!userName || !password) {
+    return res
+      .status(400)
+      .send({ message: "Username and password are required" });
+  }
+
+  try {
+    const authenticatedUser = await userStoreInstance.authenticate(
+      userName,
+      password
+    );
+    if (authenticatedUser) {
+      const token = jwt.sign({ user: authenticatedUser }, secretToken);
+      res.status(200).json({ message: "Login successful", token });
+    } else {
+      res.status(401).json({ message: "Authentication failed" });
+    }
+  } catch (error) {
+    res.status(403).json({ message: `Forbidden: ${getErrorMessage(error)}` });
+  }
+});
+
+export default router;

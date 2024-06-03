@@ -6,118 +6,107 @@ These are the notes from a meeting with the frontend developer that describe wha
 
 ## API Endpoints
 
-#### Products
+### Products
 
-- Index : `path : /products` , method : [GET], **list out all of the products are available in project**
-- Show: `path: /product/:id` , method : [GET], **list out product by using product id**
-- Create [token required] {
-  `path: /products`
-  method : [POST]
-  require Token : true
-  **create new product**
-  }
-- [OPTIONAL] Products by category (args: product category){
-  `path : /products/category/:category`
-  method: [GET]
-  require token : false
-  **Get list of products by input the category name**
-  }
+- **Index**:
+  - `GET /products`
+  - Returns a list of all products available in the project.
 
-#### Users
+- **Show**:
+  - `GET /product/:id`
+  - Returns details of a specific product by its ID.
 
-- Index [token required] {
-  `path : /users`
-  method : [GET]
-  require token : true
-  **Get list of users in project**
-  }
-- SignUp {
-  `path : /signUp`
-  method: [POST]
-  require Token : false
-  **allow user to sign up and got the token , then user can use that token for project**
-  }
-- Show [token required] {
-  `path: /users/:id`
-  method : [GET]
-  require token : true
-  **Get user info with user id**
-  }
-- Create N[token required]{
-  `path : /users`
-  method: [POST]
-  require Token : true
-  **create new user in the project with token required**
-  }
-- Login {
-  path :/authenticate
-  method: [POST]
-  require token : false
-  **Allow user to login and then get the token**
-  }
+- **Create** [token required]:
+  - `POST /products`
+  - Requires a token.
+  - Creates a new product.
 
-#### Orders
+- **Products by Category** (optional):
+  - `GET /products/category/:category`
+  - Returns a list of products filtered by category.
+  - Does not require a token.
 
-- Current Order by user (args: user id)[token required] {
-  path : /orders/user/userId
-  method : [GET]
-  require token : true
-  **allow user to get orders by user id**
-  }
-- [OPTIONAL] Completed Orders by user (args: user id)[token required] {
-  path: /orders/user/:userId/order
-  method :[GET]
-  token require : true
-  **Get completed orders by user using user id**
-  }
-- update Order status {
-  path : /orders/:id
-  method: [PUT],
-  token require: false
-  **update status of order from active to complete**
-  }
-- create Order {
-  path : /orders
-  method:[POST]
-  token require : false
-  **allow user to create order**
-  }
-- Get list of Orders {
-  path : /orders
-  method : [GET]
-  token require : false
-  **Get list of all orders**
-  }
+### Users
+
+- **Index** [token required]:
+  - `GET /users`
+  - Requires a token.
+  - Returns a list of all users.
+
+- **SignUp**:
+  - `POST /signUp`
+  - Allows a new user to sign up and receive a token for authentication.
+
+- **Show** [token required]:
+  - `GET /users/:id`
+  - Requires a token.
+  - Returns details of a specific user by their ID.
+
+- **Create** [token required]:
+  - `POST /users`
+  - Requires a token.
+  - Creates a new user.
+
+- **Login**:
+  - `POST /authenticate`
+  - Allows a user to log in and receive a token for authentication.
+
+### Orders
+
+- **Current Order by User** [token required]:
+  - `GET /orders/user/:userId`
+  - Requires a token.
+  - Returns the current order for a user by their user ID.
+
+- **Completed Orders by User** (optional) [token required]:
+  - `GET /orders/user/:userId/order`
+  - Requires a token.
+  - Returns completed orders for a user by their user ID.
+
+- **Update Order Status**:
+  - `PUT /orders/:id`
+  - Updates the status of an order from active to complete.
+  - Does not require a token.
+
+- **Create Order**:
+  - `POST /orders`
+  - Allows a user to create a new order.
+  - Does not require a token.
+
+- **List of Orders**:
+  - `GET /orders`
+  - Returns a list of all orders.
+  - Does not require a token.
 
 ## Data Shapes
 
-#### Product
+### Product
 
-- id SERIAL PRIMARY KEY (id of each product),
-- name VARCHAR(40) (name of product)
-- price integer (price of product)
-- [OPTIONAL] category (product's category is optional)
+- `id` SERIAL PRIMARY KEY
+- `name` VARCHAR(40)
+- `price` INTEGER
+- `category` (optional)
 
-#### User
+### User
 
-- id SERIAL PRIMARY KEY (id of each user),
-- firstName VARCHAR(50) (user's first name),
-- lastName VARCHAR(50) (user's last name),
-- user_name VARCHAR(50) UNIQUE (user's login name is unique),
-- password TEXT (user's password)
+- `id` SERIAL PRIMARY KEY
+- `firstName` VARCHAR(50)
+- `lastName` VARCHAR(50)
+- `user_name` VARCHAR(50) UNIQUE
+- `password` TEXT
 
-#### Orders
+### Order
 
-- id SERIAL PRIMARY KEY (id of each order),
-- product_id bigint (product's id in the order),
-- quantity integer (quantity of each product in the order),
-- user_id bigint (user_id of each order),
-- status VARCHAR(10) (order's status)
+- `id` SERIAL PRIMARY KEY
+- `product_id` BIGINT
+- `quantity` INTEGER
+- `user_id` BIGINT
+- `status` VARCHAR(10)
 
-#### Order Product
+### Order Product
 
-- order_id bigint (id of the order),
-- product_id bigint (id of the product in the order),
-- FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE ON UPDATE CASCADE,
-- FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE ON UPDATE CASCADE,
-- PRIMARY KEY (order_id, product_id)
+- `order_id` BIGINT
+- `product_id` BIGINT
+- FOREIGN KEY (`order_id`) REFERENCES `orders(id)` ON DELETE CASCADE ON UPDATE CASCADE
+- FOREIGN KEY (`product_id`) REFERENCES `products(id)` ON DELETE CASCADE ON UPDATE CASCADE
+- PRIMARY KEY (`order_id`, `product_id`)

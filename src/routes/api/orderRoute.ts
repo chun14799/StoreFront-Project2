@@ -1,111 +1,118 @@
 import express, { Request, Response } from "express";
-import auth from "../../middleware/auth";
+import authMiddleware from "../../middleware/auth";
 import { OrderStore, Order } from "../../models/orders";
-const orderRoute = express.Router();
-const orderStore = new OrderStore();
 
-orderRoute.get("/", async (_req: Request, res: Response) => {
+const router = express.Router();
+const store = new OrderStore();
+
+// Fetch all orders
+router.get("/", async (req: Request, res: Response) => {
   try {
-    const oders = await orderStore.index();
+    const orders = await store.getAllOrders();
     res
       .status(200)
-      .json({ message: "Get list of oders successfully", data: oders });
+      .json({ message: "Orders retrieved successfully", data: orders });
   } catch (error) {
-    res.status(500).send({ status: 500, message: `${error}` });
+    res.status(500).json({ status: 500, message: `Error: ${error}` });
   }
 });
 
-orderRoute.get("/user/:userId", auth, async (req: Request, res: Response) => {
-  try {
-    const userId = parseInt(req.params.userId);
-    if (userId && typeof userId == "number") {
-      const orders = await orderStore.getOrdersByUser(userId);
-      res
-        .status(200)
-        .json({
-          message: "Get orders info by user successfully",
-          data: orders,
-        });
-    } else {
-      res.status(400).send({ message: "Please pass user id as a number" });
-    }
-  } catch (error) {
-    res.status(500).send({ status: 500, message: `${error}` });
-  }
-});
-orderRoute.get(
-  "/user/:userId/order",
-  auth,
+// Fetch orders by user ID
+router.get(
+  "/user/:userId",
+  authMiddleware,
   async (req: Request, res: Response) => {
+    const userId = parseInt(req.params.userId);
+
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: "User ID must be a number" });
+    }
+
     try {
-      const userId = parseInt(req.params.userId);
-      if (userId && typeof userId == "number") {
-        const orders = await orderStore.getCompletedOrdersByUser(userId);
-        res
-          .status(200)
-          .json({
-            message: "Get orders complete by user successfully",
-            data: orders,
-          });
-      } else {
-        res.status(400).send({ message: "Please pass user id as a number" });
-      }
+      const orders = await store.getOrdersByUser(userId);
+      res.status(200).json({
+        message: "Orders for user retrieved successfully",
+        data: orders,
+      });
     } catch (error) {
-      res.status(500).send({ status: 500, message: `${error}` });
+      res.status(500).json({ status: 500, message: `Error: ${error}` });
     }
   }
 );
-orderRoute.post("/", auth, async (req: Request, res: Response) => {
-  try {
-    // status is active as default when we created a new order
-    // if the order is complete we will call another endpoint to update the status
-    const newOrder: Order = {
-      product_id: parseInt(req.body.product_id),
-      user_id: parseInt(req.body.user_id),
-      quantity: req.body.quantity,
-      status: "active",
-    };
-    if (newOrder.product_id && newOrder.user_id && newOrder.quantity) {
-      if (newOrder.quantity <= 0) {
-        res
-          .status(400)
-          .send({
-            message: "Please input quantity of product as positive numbers",
-          });
-      }
-      const createdOrder = await orderStore.createOrder(newOrder);
-      if (createdOrder) {
-        res.status(200).json({
-          message: "Create new order successfully",
-          data: createdOrder,
-        });
-      } else {
-        throw new Error("Error when created Product");
-      }
-    } else {
-      res.status(400).send({ message: "Please input product name and price" });
+
+// Fetch completed orders by user ID
+router.get(
+  "/user/:userId/order",
+  authMiddleware,
+  async (req: Request, res: Response) => {
+    const userId = parseInt(req.params.userId);
+
+    if (isNaN(userId)) {
+      return res.status(400).json({ message: "User ID must be a number" });
     }
-  } catch (error) {
-    res.status(500).send({ message: `${error}` });
+
+    try {
+      const completedOrders = await store.getCompletedOrdersByUser(userId);
+      res.status(200).json({
+        message: "Completed orders for user retrieved successfully",
+        data: completedOrders,
+      });
+    } catch (error) {
+      res.status(500).json({ status: 500, message: `Error: ${error}` });
+    }
   }
-});
-orderRoute.put("/:id", auth, async (req: Request, res: Response) => {
+);
+
+// Create a new order
+router.post("/", authMiddleware, async (req: Request, res: Response) => {
+  const { product_id, user_id, quantity } = req.body;
+
+  if (!product_id || !user_id || !quantity) {
+    return res
+      .status(400)
+      .json({ message: "Product ID, user ID, and quantity are required" });
+  }
+
+  if (quantity <= 0) {
+    return res
+      .status(400)
+      .json({ message: "Quantity must be a positive number" });
+  }
+
+  const newOrder: Order = {
+    product_id: parseInt(product_id),
+    user_id: parseInt(user_id),
+    quantity,
+    status: "active",
+  };
+
   try {
-    const orderId = parseInt(req.params.id);
-    if (orderId && typeof orderId == "number") {
-      const orders = await orderStore.updateStatusOfOrder(orderId);
-      res
-        .status(200)
-        .json({
-          message: "Update status of order to complete successfully",
-          data: orders,
-        });
-    } else {
-      res.status(400).send({ message: "Please pass order id as a number" });
-    }
+    const createdOrder = await store.createOrder(newOrder);
+    res
+      .status(201)
+      .json({ message: "Order created successfully", data: createdOrder });
   } catch (error) {
-    res.status(500).send({ status: 500, message: `${error}` });
+    res.status(500).json({ status: 500, message: `Error: ${error}` });
   }
 });
 
-export default orderRoute;
+// Update order status to complete
+router.put("/:id", authMiddleware, async (req: Request, res: Response) => {
+  const orderId = parseInt(req.params.id);
+
+  if (isNaN(orderId)) {
+    return res.status(400).json({ message: "Order ID must be a number" });
+  }
+
+  try {
+    const updatedOrder = await store.updateOrderStatusToComplete(orderId);
+    res.status(200).json({
+      message: "Order status updated to complete",
+      data: updatedOrder,
+    });
+  } catch (error) {
+    res.status(500).json({ status: 500, message: `Error: ${error}` });
+  }
+});
+
+export default router;

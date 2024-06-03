@@ -1,16 +1,16 @@
 import client from "../connection";
 
 export type Product = {
-  id?: Number;
+  id?: number;
   name: string;
-  price: Number;
+  price: number;
   category?: string;
 };
 export class ProductStore {
   // @ts-ignore
-  async index(): Promise<Product[]> {
+  async getAllProducts(): Promise<Product[]> {
     try {
-      const connection = await client.connect();
+      const connection = await client!.connect();
       const sql = `SELECT * FROM products`;
       const result = await connection.query(sql);
       if (result && result.rows) {
@@ -25,9 +25,9 @@ export class ProductStore {
     }
   }
   // @ts-ignore
-  async showProductInfo(product_id): Promise<Product> {
+  async getProductById(product_id): Promise<Product> {
     try {
-      const connection = await client.connect();
+      const connection = await client!.connect();
       const sql = `SELECT * FROM products WHERE id = ${product_id}`;
       const result = await connection.query(sql);
       if (result.rows && result.rows.length > 0) {
@@ -42,14 +42,14 @@ export class ProductStore {
     }
   }
   // @ts-ignore
-  async createProduct(p: Product): Promise<Product> {
+  async createNewProduct(p: Product): Promise<Product> {
     try {
       const newProduct: Product = {
         name: p.name,
         price: p.price,
         category: p.category,
       };
-      const connection = await client.connect();
+      const connection = await client!.connect();
       const sql =
         "INSERT INTO products (name, price , category) VALUES ($1,$2,$3) RETURNING *";
       const result = await connection.query(sql, [
@@ -69,9 +69,9 @@ export class ProductStore {
       throw new Error(`${error}`);
     }
   }
-  async getProductByCategory(category: string): Promise<Product[]> {
+  async getProductsByCategory(category: string): Promise<Product[]> {
     try {
-      const connection = await client.connect();
+      const connection = await client!.connect();
       const sql = `SELECT * FROM products WHERE category LIKE '%${category}%'`;
       const result = await connection.query(sql);
       if (result && result.rows.length > 0) {

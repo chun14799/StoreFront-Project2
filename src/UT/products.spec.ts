@@ -3,28 +3,31 @@ import dotenv from "dotenv";
 import axios from "axios";
 import app from "../server";
 import supertest from "supertest";
-let http = supertest.agent(app);
+
+const http = supertest.agent(app);
 const backendServer = "http://localhost:3000/api";
 dotenv.config();
 const store = new ProductStore();
-describe("Testing Product model", () => {
-  it("Should have an index method", () => {
-    expect(store.index).toBeDefined;
+
+describe("Product Model Tests", () => {
+  it("should have an index method", () => {
+    expect(store.getAllProducts).toBeDefined;
   });
 
-  it("should have showInfo method", () => {
-    expect(store.showProductInfo).toBeDefined();
+  it("should have a showInfo method", () => {
+    expect(store.getProductById).toBeDefined();
   });
 
-  it("should have create Product method", () => {
-    expect(store.createProduct).toBeDefined();
+  it("should have a create Product method", () => {
+    expect(store.createNewProduct).toBeDefined();
   });
 
-  it("should have getProductByCategory method", () => {
-    expect(store.getProductByCategory).toBeDefined();
+  it("should have a getProductByCategory method", () => {
+    expect(store.getProductsByCategory).toBeDefined();
   });
 });
-describe("Testing Product Endpoint", () => {
+
+describe("Product Endpoint Tests", () => {
   let signUpProduct;
   const loginURL = `${backendServer}/users/authenticate`;
   const payloadLogin = {
@@ -45,7 +48,7 @@ describe("Testing Product Endpoint", () => {
         ProductUser
       );
     } catch (error) {
-      console.log("error");
+      console.log("Error:", error);
     }
 
     try {
@@ -56,32 +59,27 @@ describe("Testing Product Endpoint", () => {
       };
       const login = await axios.post(loginURL, payloadLogin);
       const loginToken = login.data.token;
-      let config = {
+      const config = {
         headers: { Authorization: `Bearer ${loginToken}` },
       };
-      const result = await axios.post(
-        `${backendServer}/products`,
-        newProduct,
-        config
-      );
+      await axios.post(`${backendServer}/products`, newProduct, config);
     } catch (err) {
-      console.log(err);
+      console.log("Error:", err);
     }
   });
 
-  it("should return list of products successfully", async () => {
+  it("should return a list of products successfully", async () => {
     const result = await axios.get(`${backendServer}/products`);
-    // @ts-ignore
     expect(result.status).toBe(200);
   });
 
-  it("should return product info by product id ", async () => {
+  it("should return product info by product id", async () => {
     const productId = 1;
     const result = await axios.get(`${backendServer}/products/${productId}`);
     expect(result.status).toBe(200);
   });
 
-  it("should create new product and require token", async () => {
+  it("should create a new product and require token", async () => {
     const newProduct = {
       name: "Macbook",
       price: 200000,
@@ -90,15 +88,15 @@ describe("Testing Product Endpoint", () => {
     const url = `${backendServer}/products/`;
     const login = await axios.post(loginURL, payloadLogin);
     const loginToken = login.data.token;
-    let config = {
+    const config = {
       headers: { Authorization: `Bearer ${loginToken}` },
     };
     const result = await axios.post(url, newProduct, config);
-    expect(result.status).toBe(200);
+    expect(result.status).toBe(201);
   });
 
-  it("should get list of products by category", async () => {
-    let categoryName = "Laptop";
+  it("should get a list of products by category", async () => {
+    const categoryName = "Laptop";
     const listProduct = await axios.get(
       `${backendServer}/products/category/${categoryName}`
     );

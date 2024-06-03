@@ -1,6 +1,10 @@
 import dotenv from "dotenv";
 import { Pool } from "pg";
+
+// Load environment variables from .env file
 dotenv.config();
+
+// Destructure environment variables
 const {
   POSTGRES_HOST,
   POSTGRES_DB,
@@ -9,7 +13,11 @@ const {
   ENV,
   POSTGRES_DB_TEST,
 } = process.env;
-let client: Pool;
+
+// Declare a variable to hold the PostgreSQL client and assign it to undefined initially
+let client: Pool | undefined;
+
+// Configure the client based on the environment
 if (ENV === "test") {
   client = new Pool({
     host: POSTGRES_HOST,
@@ -17,17 +25,23 @@ if (ENV === "test") {
     user: POSTGRES_USER,
     password: POSTGRES_PASSWORD,
   });
-  console.log("connect Test DB");
-}
-
-if (ENV === "dev") {
+  console.log("Connected to the Test Database");
+} else if (ENV === "dev") {
   client = new Pool({
     host: POSTGRES_HOST,
     database: POSTGRES_DB,
     user: POSTGRES_USER,
     password: POSTGRES_PASSWORD,
   });
-  console.log("connect Dev DB");
+  console.log("Connected to the Development Database");
+} else {
+  throw new Error(`Unknown environment: ${ENV}`);
 }
-//@ts-ignore
+
+// Ensure the client is assigned
+if (!client) {
+  throw new Error("Database client is not initialized");
+}
+
+// Export the configured client for use in other parts of the application
 export default client;

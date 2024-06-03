@@ -1,25 +1,25 @@
 import express from "express";
 import bodyParser from "body-parser";
-import routers from "./routes";
 import dotenv from "dotenv";
 import { Request, Response } from "express";
+import routers from "./routes";
 
 dotenv.config();
 
-console.log(process.env.ENV);
-
 const app: express.Application = express();
-const address: string = "0.0.0.0:3000";
+const port = 3000;
+const host = "localhost";
 
 app.use(bodyParser.json());
 
-app.get("/", function (req: Request, res: Response) {
-  res.send("Hello World!");
+app.get("/", (req: Request, res: Response) => {
+  res.send("Welcome to our API!");
 });
+
 app.use("/api", routers);
 
-app.listen(3000, function () {
-  console.log(`starting app on: ${address}`);
+app.listen(port, host, () => {
+  console.log(`Server is running at http://${host}:${port}`);
 });
 
 export default app;

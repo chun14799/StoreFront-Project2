@@ -1,81 +1,84 @@
 import express, { Request, Response } from "express";
 import { Product, ProductStore } from "../../models/products";
-import auth from "../../middleware/auth";
-const productRoute = express.Router();
-const productStore = new ProductStore();
+import authMiddleware from "../../middleware/auth";
 
-productRoute.get("/", async (_req: Request, res: Response) => {
+const productRouter = express.Router();
+const store = new ProductStore();
+
+// Fetch all products
+productRouter.get("/", async (req: Request, res: Response) => {
   try {
-    const products = await productStore.index();
+    const products = await store.getAllProducts();
     res
       .status(200)
-      .json({ message: "Get list of users successfully", data: products });
+      .json({ message: "Products retrieved successfully", data: products });
   } catch (error) {
-    res.status(500).send({ status: 500, message: `${error}` });
-  }
-});
-productRoute.get("/:id", async (req: Request, res: Response) => {
-  try {
-    const productId = parseInt(req.params.id);
-    if (productId && typeof productId == "number") {
-      const product = await productStore.showProductInfo(productId);
-      res
-        .status(200)
-        .json({ message: "Get product info successfully", data: product });
-    } else {
-      res.status(400).send({ message: "Please pass product id as a number" });
-    }
-  } catch (error) {
-    res.status(500).send({ status: 500, message: `${error}` });
-  }
-});
-productRoute.post("/", auth, async (req: Request, res: Response) => {
-  try {
-    const newProduct: Product = {
-      name: req.body.name,
-      price: req.body.price,
-      category: req.body.category,
-    };
-    if (newProduct.name && newProduct.price) {
-      const createdProduct = await productStore.createProduct(newProduct);
-      if (createdProduct) {
-        res.status(200).json({
-          message: "Create new product successfully",
-          data: createdProduct,
-        });
-      } else {
-        throw new Error("Error when created Product");
-      }
-    } else {
-      res.status(400).send({ message: "Please input product name and price" });
-    }
-  } catch (error) {
-    res.status(500).send({ message: `${error}` });
-  }
-});
-productRoute.get("/category/:category", async (req: Request, res: Response) => {
-  try {
-    const categoryName = req.params.category;
-    if (categoryName) {
-      const productByCategory = await productStore.getProductByCategory(
-        categoryName
-      );
-      res.status(200).json({
-        message: "Successfully get list of products by category",
-        data: productByCategory,
-      });
-    } else {
-      res
-        .status(400)
-        .send({
-          message: "Please pass product category that you want to search",
-        });
-    }
-  } catch (error) {
-    res.status(500).json({
-      message: `${error}`,
-    });
+    res.status(500).json({ status: 500, message: `Error: ${error}` });
   }
 });
 
-export default productRoute;
+// Fetch a single product by ID
+productRouter.get("/:id", async (req: Request, res: Response) => {
+  const productId = parseInt(req.params.id);
+
+  if (isNaN(productId)) {
+    return res.status(400).json({ message: "Product ID must be a number" });
+  }
+
+  try {
+    const product = await store.getProductById(productId);
+    res
+      .status(200)
+      .json({ message: "Product retrieved successfully", data: product });
+  } catch (error) {
+    res.status(500).json({ status: 500, message: `Error: ${error}` });
+  }
+});
+
+// Create a new product
+productRouter.post("/", authMiddleware, async (req: Request, res: Response) => {
+  const { name, price, category } = req.body;
+
+  if (!name || !price) {
+    return res
+      .status(400)
+      .json({ message: "Product name and price are required" });
+  }
+
+  const newProduct: Product = { name, price, category };
+
+  try {
+    const createdProduct = await store.createNewProduct(newProduct);
+    res
+      .status(201)
+      .json({ message: "Product created successfully", data: createdProduct });
+  } catch (error) {
+    res.status(500).json({ message: `Error: ${error}` });
+  }
+});
+
+// Fetch products by category
+productRouter.get(
+  "/category/:category",
+  async (req: Request, res: Response) => {
+    const category = req.params.category;
+
+    if (!category) {
+      return res
+        .status(400)
+        .json({ message: "Category parameter is required" });
+    }
+
+    try {
+      const products = await store.getProductsByCategory(category);
+      res.status(200).json({
+        message: "Products by category retrieved successfully",
+        data: products,
+      });
+    } catch (error) {
+      res.status(500).json({ message: `Error: ${error}` });
+    }
+  }
+);
+
+export default productRouter;

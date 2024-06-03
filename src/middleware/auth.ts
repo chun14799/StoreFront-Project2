@@ -1,23 +1,28 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { Request, Response, NextFunction } from "express";
-dotenv.config();
-const secret = String(process.env.SECRET_TOKEN);
 
-const auth = (req: Request, res: Response, next: NextFunction) => {
+dotenv.config();
+
+const secretKey = process.env.SECRET_TOKEN as string;
+
+const authenticate = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
   try {
-    let token = req.headers.authorization;
-    if (token) {
-      token = token.split(" ")[1];
-      let user = jwt.verify(token, secret);
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const token = authHeader.split(" ")[1];
+      jwt.verify(token, secretKey);
       next();
     } else {
-      throw new Error("Invalid token");
+      res.status(401).json({ message: "Token not provided" });
     }
   } catch (error) {
-    res.status(401).json({
-      message: `Access denied! Invalid token`,
-    });
+    res.status(401).json({ message: "Access denied! Invalid token" });
   }
 };
-export default auth;
+
+export default authenticate;
