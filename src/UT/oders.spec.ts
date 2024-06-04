@@ -6,7 +6,7 @@ import supertest from "supertest";
 const http = supertest.agent(app);
 const store = new OrderStore();
 
-describe("Order Model Tests", () => {
+describe("Testing Order model", () => {
   it("should have an index method", async () => {
     expect(store.getAllOrders).toBeDefined();
   });

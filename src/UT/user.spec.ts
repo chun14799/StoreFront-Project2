@@ -9,7 +9,7 @@ const backendServer = "http://localhost:3000/api";
 dotenv.config();
 const store = new UserStore();
 
-describe("User Model Tests", () => {
+describe("Testing User model", () => {
   it("should have an index method", () => {
     expect(store.index).toBeDefined();
   });
